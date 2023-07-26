@@ -1,10 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { MovieService } from 'src/app/services/movie.service';
 
 @Component({
   selector: 'app-movies',
   templateUrl: './movies.component.html',
   styleUrls: ['./movies.component.css']
 })
-export class MoviesComponent {
+export class MoviesComponent implements OnInit
+{
+  constructor(private movieService:MovieService){}
+
+  ngOnInit(): void { }
+
+  getMovies(searchTerms:string){
+    this.movieService.getMovies(searchTerms).subscribe(data => {
+      console.log(data);
+    })
+  }
+
 
 }
