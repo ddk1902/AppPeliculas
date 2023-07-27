@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { debounceTime, distinct, filter, fromEvent, map, Subscription, switchMap, tap } from 'rxjs';
+import { Movie } from 'src/app/interfaces/movies';
 import { MovieService } from 'src/app/services/movie.service';
 
 @Component({
@@ -6,22 +8,29 @@ import { MovieService } from 'src/app/services/movie.service';
   templateUrl: './movies.component.html',
   styleUrls: ['./movies.component.css']
 })
-export class MoviesComponent implements OnInit
-{
-  constructor(private movieService:MovieService){}
+export class MoviesComponent implements OnInit, OnDestroy {
+  movies:Movie[] = [];
+  @ViewChild('movieSearchInput', { static: true }) movieSearchInput!: ElementRef
+  movieSuscription!: Subscription
 
-  ngOnInit(): void { }
+  constructor(private movieService: MovieService) { }
 
-
-  // Creamos una función llamada getMovies para poder listar todas las peliculas a través de los términos de búsqueda
-  // Definimos el parámetro searchTerms para los términos de búsqueda
-  // A través de un observable nos subscribimos a los datos que trae la búsqueda
-
-  getMovies(searchTerms:string){
-    this.movieService.getMovies(searchTerms).subscribe(data => {
-      console.log(data);
-    })
+  ngOnInit(): void {
+   this.movieSuscription = fromEvent<Event>(this.movieSearchInput.nativeElement, 'keyup').pipe(
+      map((event: Event) => {
+        const searchTerm = (event.target as HTMLInputElement).value;
+        return searchTerm
+      }),
+      filter((searchTerm: string) => searchTerm.length > 3),
+      debounceTime(500),
+      distinct(),
+      switchMap((searchTerm: string) => this.movieService.getMovies(searchTerm) )
+      ).subscribe((movies: Movie[]) => {
+        this.movies = movies !== undefined ? movies : [];
+      })
   }
 
-
+  ngOnDestroy(): void {
+    this.movieSuscription.unsubscribe()
+  }
 }
